@@ -1,0 +1,58 @@
+version: '3.8'
+
+networks:
+  spreadbot-network:
+    external: true
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: build/Dockerfile.bot
+    container_name: spreadbot-bot
+    restart: unless-stopped
+    environment:
+      DB_URL: postgres://${POSTGRES_USER:-your_postgres_user}:${POSTGRES_PASSWORD:-your_postgres_password}@postgres:5432/${POSTGRES_DB:-your_postgres_db}?sslmode=disable
+      TG_TOKEN: ${TG_TOKEN}
+      TZ: ${TZ:-UTC}
+    networks:
+      - spreadbot-network
+
+  monitoring:
+    build:
+      context: .
+      dockerfile: build/Dockerfile.monitoring
+    container_name: spreadbot-monitoring
+    restart: unless-stopped
+    environment:
+      DB_URL: postgres://${POSTGRES_USER:-your_postgres_user}:${POSTGRES_PASSWORD:-your_postgres_password}@postgres:5432/${POSTGRES_DB:-your_postgres_db}?sslmode=disable
+      TG_TOKEN: ${TG_TOKEN}
+      REDIS_URL: redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      MIN_WORKER: ${MIN_WORKER:-1}
+      MAX_WORKER: ${MAX_WORKER:-10}
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC_NOTIFICATIONS: ${KAFKA_TOPIC_NOTIFICATIONS:-spread_notifications}
+      EXCHANGES: ${EXCHANGES:-gate,binance,mexc}
+      TZ: ${TZ:-UTC}
+    networks:
+      - spreadbot-network
+
+  notification:
+    build:
+      context: .
+      dockerfile: build/Dockerfile.notification
+    container_name: spreadbot-notification
+    restart: unless-stopped
+    environment:
+      DB_URL: postgres://${POSTGRES_USER:-your_postgres_user}:${POSTGRES_PASSWORD:-your_postgres_password}@postgres:5432/${POSTGRES_DB:-your_postgres_db}?sslmode=disable
+      TG_TOKEN: ${TG_TOKEN}
+      REDIS_URL: redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      MIN_WORKER: ${MIN_WORKER:-1}
+      MAX_WORKER: ${MAX_WORKER:-10}
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC_NOTIFICATIONS: ${KAFKA_TOPIC_NOTIFICATIONS:-spread_notifications}
+      TZ: ${TZ:-UTC}
+    networks:
+      - spreadbot-network
